@@ -6,6 +6,20 @@ if [ $EUID != 0 ]; then
     exit $?
 fi
 
+flag_c=false
+
+# Parse options
+while getopts "c" option; do
+    case $option in
+        c) flag_c=true ;;  
+        *) echo "Usage: $0 [-f]"; exit 1 ;;
+    esac
+done
+
+if $flag_c; then
+    clear
+fi
+
 # Path to the energy reading in microjoules (for CPU)
 cpu_energy_file="/sys/class/powercap/intel-rapl/intel-rapl:0/energy_uj"
 
