@@ -1,5 +1,11 @@
 #!/bin/bash
 
+
+if [ $EUID != 0 ]; then
+    sudo "$0" "$@"
+    exit $?
+fi
+
 # Path to the energy reading in microjoules (for CPU)
 cpu_energy_file="/sys/class/powercap/intel-rapl/intel-rapl:0/energy_uj"
 
@@ -28,13 +34,13 @@ while true; do
     display_values
     
     # Read the initial CPU energy value
-    cpu_energy1=$(cat $cpu_energy_file)
+    cpu_energy1=$(sudo cat $cpu_energy_file)
 
     # Wait for 1 second
     sleep 1
 
     # Read the new CPU energy value after 1 second
-    cpu_energy2=$(cat $cpu_energy_file)
+    cpu_energy2=$(sudo cat $cpu_energy_file)
 
     # Calculate the CPU energy difference (in microjoules)
     cpu_energy_diff=$((cpu_energy2 - cpu_energy1))
