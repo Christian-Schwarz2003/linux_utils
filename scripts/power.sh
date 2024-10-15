@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 if [ $EUID != 0 ]; then
     sudo "$0" "$@"
     exit $?
@@ -8,11 +7,17 @@ fi
 
 flag_c=false
 
+usage_desc() {
+    echo "Usage: $0 [-c]"
+    echo "  -c Clear the terminal screen before displaying the output"
+    exit 1
+}
+
 # Parse options
 while getopts "c" option; do
     case $option in
-        c) flag_c=true ;;  
-        *) echo "Usage: $0 [-f]"; exit 1 ;;
+    c) flag_c=true ;;
+    *) usage_desc ;;
     esac
 done
 
@@ -36,17 +41,23 @@ display_values() {
     formatted_gpu_power=$(printf "$number_format" "$gpu_power")
     formatted_cpu_power=$(printf "$number_format" "$cpu_power_watts")
     formatted_total_power=$(printf "$number_format" "$total_power")
-    
+
+    # Goes to the start of the first line
+    echo -ne "\r"
+
+    # Print the values (-n to not append a newline at the end)
     echo "CPU Power Consumption: $formatted_cpu_power W"
     echo "GPU Power Consumption: $formatted_gpu_power W"
     echo "---"
-    echo "SUM Power Consumption: $formatted_total_power W"
+    echo -n "SUM Power Consumption: $formatted_total_power W"
 }
+
 # Function to read energy and calculate CPU power
 while true; do
 
+    # call this initially so there is always display
     display_values
-    
+
     # Read the initial CPU energy value
     cpu_energy1=$(sudo cat $cpu_energy_file)
 
@@ -66,14 +77,12 @@ while true; do
     cpu_power_watts=$(echo "$cpu_energy_joules / 1" | bc -l)
 
     # Get GPU power consumption using nvidia-smi (in watts)
-    gpu_power=$(nvidia-smi --query-gpu=power.draw --format=csv,noheader,nounits )
+    gpu_power=$(nvidia-smi --query-gpu=power.draw --format=csv,noheader,nounits)
 
     total_power=$(echo "$gpu_power + $cpu_power_watts" | bc -l)
 
-    
-    
-    # Clear the previous output and rewrite on the same lines
-    tput cuu 4
-    
-done
+    # moves the cursor up 3 lines
+    # called at the end so the cursor is default down, and it doesnt accidentally go over the start
+    tput cuu 3
 
+done
