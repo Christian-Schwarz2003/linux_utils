@@ -7,10 +7,19 @@ fi
 
 flag_c=false
 
+number_format="%07.3f"
+time_interval=1
+
 usage_desc() {
     echo "Usage: $0 [-c]"
     echo "  -c Clear the terminal screen before displaying the output"
     exit 1
+}
+
+exit_fn() {
+    trap SIGINT
+    echo ""
+    exit
 }
 
 # Parse options
@@ -35,8 +44,6 @@ if [ ! -f "$cpu_energy_file" ]; then
 fi
 LC_NUMERIC="en_US.UTF-8"
 
-number_format="%07.3f"
-
 display_values() {
     formatted_gpu_power=$(printf "$number_format" "$gpu_power")
     formatted_cpu_power=$(printf "$number_format" "$cpu_power_watts")
@@ -52,6 +59,8 @@ display_values() {
     echo -n "SUM Power Consumption: $formatted_total_power W"
 }
 
+trap "exit_fn" INT
+
 # Function to read energy and calculate CPU power
 while true; do
 
@@ -62,7 +71,7 @@ while true; do
     cpu_energy1=$(sudo cat $cpu_energy_file)
 
     # Wait for 1 second
-    sleep 1
+    sleep $time_interval
 
     # Read the new CPU energy value after 1 second
     cpu_energy2=$(sudo cat $cpu_energy_file)
@@ -74,7 +83,7 @@ while true; do
     cpu_energy_joules=$(echo "$cpu_energy_diff / 1000000" | bc -l)
 
     # Since we measured over 1 second, CPU power in watts is equal to energy in joules
-    cpu_power_watts=$(echo "$cpu_energy_joules / 1" | bc -l)
+    cpu_power_watts=$(echo "$cpu_energy_joules / $time_interval" | bc -l)
 
     # Get GPU power consumption using nvidia-smi (in watts)
     gpu_power=$(nvidia-smi --query-gpu=power.draw --format=csv,noheader,nounits)
